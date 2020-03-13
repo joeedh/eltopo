@@ -12,6 +12,8 @@
 // ---------------------------------------------------------
 
 #include <subdivisionscheme.h>
+#include <libexport.h>
+#include <eltopo.h>
 
 #include <mat.h>
 #include <surftrack.h>
@@ -441,4 +443,24 @@ void QuadraticErrorMinScheme::generate_new_midpoint( size_t edge_index, const Su
     
     new_point = Vec3d( v.a[0], v.a[1], v.a[2] );
     
+}
+
+static MidpointScheme midpoint;
+static ButterflyScheme butterfly;
+static ModifiedButterflyScheme butterflymod;
+static QuadraticErrorMinScheme quaderrormin;
+
+CEXPORT void* eltopo_get_subdiv_scheme(int type) {
+    switch (type) {
+        case SUBDIV_MIDPOINT:
+            return reinterpret_cast<void*>(&midpoint);
+        case SUBDIV_BUTTERFLY:
+            return reinterpret_cast<void*>(&butterfly);
+        case SUBDIV_BUTTERFLY_MOD:
+            return reinterpret_cast<void*>(&butterflymod);
+        case SUBDIV_QUADERRORMIN:
+            return reinterpret_cast<void*>(&quaderrormin);
+        default:
+            return reinterpret_cast<void*>(&midpoint);
+    }
 }

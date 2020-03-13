@@ -24,7 +24,7 @@ static int to_int( size_t a )
 ///
 // ---------------------------------------------------------
 
-void el_topo_static_operations( const ElTopoMesh* inputs,
+CEXPORT void el_topo_static_operations( const ElTopoMesh* inputs,
                                const struct ElTopoGeneralOptions* general_options,
                                const struct ElTopoStaticOperationsOptions* options, 
                                struct ElTopoDefragInformation* defrag_info,  
@@ -51,7 +51,7 @@ void el_topo_static_operations( const ElTopoMesh* inputs,
     
     
     // =================================================================================
-    
+
     //
     // do the actual operations
     //
@@ -179,7 +179,7 @@ void el_topo_static_operations( const ElTopoMesh* inputs,
 ///
 // ---------------------------------------------------------
 
-void el_topo_free_static_operations_results( ElTopoMesh* outputs, struct ElTopoDefragInformation* defrag_info )
+CEXPORT void el_topo_free_static_operations_results( ElTopoMesh* outputs, struct ElTopoDefragInformation* defrag_info )
 {
     free( outputs->vertex_locations );
     free( outputs->vertex_masses );
@@ -202,7 +202,7 @@ void el_topo_free_static_operations_results( ElTopoMesh* outputs, struct ElTopoD
 ///
 // ---------------------------------------------------------
 
-void el_topo_integrate( const ElTopoMesh* inputs,
+CEXPORT void el_topo_integrate( const ElTopoMesh* inputs,
                        const double* in_vertex_new_locations,
                        const struct ElTopoGeneralOptions* general_options,
                        const struct ElTopoIntegrationOptions* options,
@@ -278,10 +278,78 @@ void el_topo_integrate( const ElTopoMesh* inputs,
 ///
 // ---------------------------------------------------------
 
-void el_topo_free_integrate_results( double* out_vertex_locations )
+CEXPORT void el_topo_free_integrate_results( double* out_vertex_locations )
 {
     free( out_vertex_locations );
 }
 
+CEXPORT int eltopo_simple_run(int totverts, double *oldverts, double *newverts, int tottris, int *tris,
+	double *vmasses, int *out_totverts, double **out_verts, int *out_tottris, int **out_tris)
+{
+	int vi, ti;
 
+	std::vector<Vec3d> vs;
+	std::vector<Vec3st> ts;
+	std::vector<double> masses;
 
+	SurfTrackInitializationParameters params;
+
+	vi = 0;
+	for (int i = 0; i < totverts; i++) {
+		Vec3d v(oldverts[vi], oldverts[vi+1], oldverts[vi+2]);
+		//Vec3d v(newverts[vi], newverts[vi + 1], newverts[vi + 2]);
+		vi += 3;
+
+		vs.push_back(v);
+		masses.push_back(vmasses[i]);
+	}
+
+	ti = 0;
+	for (int i = 0; i < tottris; i++) {
+		Vec3st t(tris[ti], tris[ti + 1], tris[ti + 2]);
+		ti += 3;
+
+		ts.push_back(t);
+	}
+
+	SurfTrack surf(vs, ts, masses, params);
+
+	double dt;
+
+	surf.set_all_newpositions(totverts, newverts);
+	//surf.set_positions_to_newpositions();
+	surf.integrate(1.0, dt);
+
+	//for (int i = 0; i < 1; i++) {
+		surf.improve_mesh();
+		surf.topology_changes();
+		surf.defrag_mesh();
+	//}
+
+	*out_totverts = surf.get_num_vertices();
+	*out_verts = (double*)malloc(3 * (*out_totverts) * sizeof(double));
+
+	*out_tottris = surf.m_mesh.num_triangles();
+	*out_tris = (int*)malloc(3 * (*out_tottris) * sizeof(int));
+
+	for (int i = 0; i < *out_totverts; ++i)
+	{
+		const Vec3d& pos = surf.get_position(i);
+
+		(*out_verts)[3 * i] = pos[0];
+		(*out_verts)[3 * i + 1] = pos[1];
+		(*out_verts)[3 * i + 2] = pos[2];
+
+		//outputs->vertex_masses[i] = surface_tracker.m_masses[i];
+	}
+
+	for (int i = 0; i < *out_tottris; ++i)
+	{
+		const Vec3st& curr_tri = surf.m_mesh.get_triangle(i);
+		(*out_tris)[3 * i + 0] = (curr_tri[0]);
+		(*out_tris)[3 * i + 1] = (curr_tri[1]);
+		(*out_tris)[3 * i + 2] = (curr_tri[2]);
+	}
+
+	return 1;
+}

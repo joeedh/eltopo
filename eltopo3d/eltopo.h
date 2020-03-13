@@ -1,4 +1,5 @@
 
+
 // ---------------------------------------------------------
 //
 //  eltopo.h
@@ -10,6 +11,8 @@
 
 #ifndef ELTOPO_H
 #define ELTOPO_H
+
+#include "libexport.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,6 +29,15 @@ extern "C" {
     ///
     // ---------------------------------------------------------
     
+    typedef enum {
+        SUBDIV_MIDPOINT,
+        SUBDIV_BUTTERFLY, 
+        SUBDIV_BUTTERFLY_MOD,
+        SUBDIV_QUADERRORMIN
+    } SubdivType;
+
+    CEXPORT void* eltopo_get_subdiv_scheme(SubdivType type);
+
     struct ElTopoGeneralOptions
     {
         int m_verbose;               // whether to output a lot of information to 
@@ -66,16 +78,16 @@ extern "C" {
         
         double m_max_triangle_angle;   
         
-        bool m_use_curvature_when_splitting;
+        int m_use_curvature_when_splitting;
         
-        bool m_use_curvature_when_collapsing;
+		int m_use_curvature_when_collapsing;
         
         // Clamp curvature scaling to these values
         double m_min_curvature_multiplier;
         
         double m_max_curvature_multiplier;
         
-        bool m_allow_vertex_movement;
+		int m_allow_vertex_movement;
         
         /// Minimum edge length improvement in order to flip an edge
         double m_edge_flip_min_length_change;
@@ -87,10 +99,10 @@ extern "C" {
         void *m_subdivision_scheme;   
         
         /// Whether to enforce collision-free surfaces (including during mesh maintenance operations)
-        bool m_collision_safety;
+		int m_collision_safety;
         
         /// Wether to allow non-manifold (edges incident on more than two triangles)
-        bool m_allow_non_manifold;
+		int m_allow_non_manifold;
         
     };
     
@@ -200,7 +212,7 @@ extern "C" {
     ///
     // ---------------------------------------------------------
     
-    void el_topo_static_operations( const struct ElTopoMesh* inputs,
+    CEXPORT void el_topo_static_operations( const struct ElTopoMesh* inputs,
                                    const struct ElTopoGeneralOptions* general_options,
                                    const struct ElTopoStaticOperationsOptions* options, 
                                    struct ElTopoDefragInformation* defrag_info, 
@@ -212,7 +224,7 @@ extern "C" {
     ///
     // ---------------------------------------------------------
     
-    void el_topo_free_static_operations_results( struct ElTopoMesh* outputs, struct ElTopoDefragInformation* defrag_info  );
+    CEXPORT void el_topo_free_static_operations_results( struct ElTopoMesh* outputs, struct ElTopoDefragInformation* defrag_info  );
     
     
     // ---------------------------------------------------------
@@ -244,7 +256,7 @@ extern "C" {
     ///
     // ---------------------------------------------------------
     
-    void el_topo_integrate(const ElTopoMesh* inputs,
+    CEXPORT void el_topo_integrate(const ElTopoMesh* inputs,
                            const double* in_vertex_new_locations,
                            const struct ElTopoGeneralOptions* general_options,
                            const struct ElTopoIntegrationOptions* options,
@@ -258,8 +270,10 @@ extern "C" {
     ///
     // ---------------------------------------------------------
     
-    void el_topo_free_integrate_results( double* out_vertex_locations );
-    
+    CEXPORT void el_topo_free_integrate_results( double* out_vertex_locations );
+    CEXPORT int eltopo_simple_run(int totverts, double *oldverts, double *newverts, int tottris, int *tris,
+		double *vmasses, int *out_totverts, double **out_verts, int *out_tottris, int **out_tris);
+
     
 #ifdef __cplusplus
 }
